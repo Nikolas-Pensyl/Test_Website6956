@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fighter Jet Survival</title>
+</head>
+<body id = "body" background="StartBackground2.png">
+    <canvas id="canvas" width="1250" height="870"></canvas>
+
+    <script src="https://code.jquery.com/jquery-2.1.0.js"></script>
+
+    <script>
+    //things to do
+    //fix collision, when turning enemies can't get hurt
+    Player = new Image();
+    Player.src = "BlueShip.png";
+    var cloud = new Image();
+    cloud.src = "WhiteCloud.png";
+    var enemy = new Image();
+    enemy.src = "GreenShip.png";
+    var fumes = new Image();
+    fumes.src = "JetFumes.png";
+    var mis = new Image();
+    mis.src = "missle.png";
+    mis.onload = function(){}
+    var bul = new Image();
+    bul.src = "Bullet.png";
+    bul.onload = function(){}
+    var bos = new Image();
+    bos.src = "Boss.png";
+    bos.onload = function(){}
+    var mySound1 = new Audio("Bomb+Explosion.mp3");
+    var mySound2 = new Audio("Explosion+7.mp3");
+    var mySound3 = new Audio("Missile+2.mp3");
+    var mySound4 = new Audio("Gun+Silencer.mp3");
+    var mySound5 = new Audio("Missile+2.mp3");
+    var mySound6 = new Audio("Bomb+Explosion.mp3");
+    var mySound7 = new Audio("Explosion+7.mp3");
+    var turn = 0;
+    var gun = false;
+    var score = 0;
+    var wait = 0;
+    var limit = 3;
+    var relSpeed = 1;
+    var level = 1;
+    var upgrade = false;
+        var canvas = document.getElementById("canvas");
+	    var ctx = canvas.getContext("2d");
+
+
+	    var width = canvas.width;
+	    var height = canvas.height;
+	    ctx.translate(width/2, height/2);
+
+	    var screen = true;
+	    var instructions = false;
+	    var instruction = "Press \"x\" to swap between missles and machine gun.4Press \"z\" to manually reload. 4Press the space bar to fire the weapon. 4Press left/right arrow keys to turn left/right.";
+	    instruction += "4Press \"c\" to have upgrade your ship. 4You have four upgrades: reload speed, max Ammo, 4max Health and healing.";
+	    instruction += "4You have enemy ships that are going to try to attack you, 4and you have to try to shoot them before hand.4You have a health bar that shows health, 4and a ammo bar that shows amount of ammo in your clip.4";
+	    var score = 10;
+	    var sleep = function(miliseconds)
+		{
+		  var start = new Date().getTime();
+		  for(var i = 0; i<1e7; i++)
+		  {
+            if((new Date().getTime()- start)> miliseconds)
+            {
+             break;
+            }
+          }
+        }
+        var Start = function()
+        {
+		  ctx.StrokeStyle = "red";
+		  ctx.font = "40px Arial";
+		  ctx.strokeRect(-(width-10)/3, height/2-350, 210, 100);
+		  ctx.strokeRect(((width-50)/10)-10, height/2-350, 210, 100);
+		  ctx.fillStyle = "white";
+		  ctx.fillText("Start Game", -((width-10)/3-2), (height-120)/5);
+		  ctx.fillText("Instructions", ((width-50)/10)-5, (height-120)/5);
+        }
+        var instruct = function()
+        {
+         ctx.fillStyle = "white";
+          ctx.clearRect(-width/2, -height/2, width, height);
+          ctx.fillRect(-width/2, -height/2, 150, 75);
+          for(var i=1, k=0, j=0; i<instruction.length; i++)
+          {
+          if(instruction.substring(i, i+1) ==="4")
+          {
+          ctx.fillText(instruction.substring(j, i), -width/2+5, -height/2+150+(k*70));
+          i++;
+          j=i;
+          k++;
+          }
+          }
+          ctx.fillStyle = "black";
+          ctx.fillText("Go back", -width/2, -height/2+50);
+        }
+        var gameOver = function()
+        {
+        clearInterval(loop);
+        sleep(50);
+         document.body.style.backgroundImage = "url('GameOver.jpg')";
+         ctx.clearRect(-width/2, -height/2, width, height);
+         sleep(50);
+        }
+	    var Player1 = function()
+	    {
+	     this.health = 100;
+	     this.maxHealth = 100;
+	     this.maxAmmo = 100;
+	     this.energy = this.maxAmmo;
+	     this.damage = 10;
+	     this.speed = 20;
+	     this.money = 0;
+	     this.use = 2;
+	     this.cloudsW = [-70];
+	     this.cloudsH = [-height/2];
+	     this.rel = false;
+	     this.act = false;
+	     this.direction = "up";
+	     this.fume = [];
+	    }
+	    Player1.prototype.draw = function(ang)
+	    {
+	    ctx.clearRect(-width/2, -height/2, width, height);
+	    ctx.font = "20px Arial";
+	    if(this.act && !this.rel)
+		{
+		 if(gun)
+		 {
+		  this.energy -=2;
+		 }
+		 else
+		 {
+		this.energy -=5;
+		}
+		missle.add(this.direction);
+		this.act = false;
+	     }
+	     if(this.energy<= 0 || this.rel)
+	     {
+	      this.rel = true;
+	      this.reload();
+	      this.act = false;
+	     }
+	     ctx.save();
+	     ctx.rotate(ang/10);
+	     ctx.drawImage(Player, -43, -46);
+	     ctx.restore();
+	     this.getDirection(ang);
+	     this.drawC(ang);
+	     this.drawF(ang);
+	     this.drawE();
+	     this.drawH();
+	     this.drawM();
+	    }
+	    Player1.prototype.reload = function()
+	    {
+	      this.energy += this.maxAmmo/50 *relSpeed;
+	      if(this.energy>=this.maxAmmo)
+	      {
+	        this.rel = false;
+	        this.energy = this.maxAmmo;
+	      }
+	    }
+	    Player1.prototype.drawM = function()
+	    {
+	      ctx.fillStyle = "black";
+	      ctx.fillText("Money: $" + this.money, -60, -height/2+30);
+	      ctx.fillText("Score: " + score, 60, -height/2+30);
+	    }
+	    Player1.prototype.drawE = function()
+	    {
+	    ctx.fillStyle = "black";
+	    ctx.fillText("Ammo left: ", -width/2+10, -height/2+20);
+	    ctx.fillStyle = "yellow";
+	    ctx.fillRect(-width/2+10, -height/2+30, 2*this.energy, 40);
+	    ctx.strokeRect(-width/2+10, -height/2+30, 2*this.maxAmmo, 40);
+	    }
+	    Player1.prototype.drawH = function()
+	    {
+	    ctx.fillStyle = "black";
+	    if(this.health>this.maxHealth)
+		{
+		           this.health = this.maxHealth;
+          }
+	    ctx.fillText("Health level: ", width/2-110-this.maxHealth*1.5, -height/2+20);
+	      ctx.fillStyle = "red";
+		 ctx.fillRect(width/2-110-this.maxHealth*1.5, -height/2+30, 2*this.health, 40);
+	    ctx.strokeRect(width/2-110-this.maxHealth*1.5, -height/2+30, this.maxHealth*2, 40);
+	    }
+	    Player1.prototype.drawC = function(ang)
+	    {
+	      if(Math.floor(Math.random()*100)<13)
+	      {
+	        if(Math.floor(Math.random() *2)%2===1)
+	        {
+	          if(Math.floor(Math.random()*2)%2===1)
+	          {
+	           this.cloudsW[this.cloudsW.length] = Math.floor(Math.random()*width/2)-1;
+	          }
+	          else
+	          {
+	            this.cloudsW[this.cloudsW.length] = Math.floor(Math.random()*-width/2)+1;
+	          }
+	          if(Math.floor(Math.random()*2)%2===1)
+	          {
+	          this.cloudsH[this.cloudsH.length] = -height/2+1;
+	          }
+	          else
+	          {
+	            this.cloudsH[this.cloudsH.length] = height/2-1;
+	          }
+	        }
+	        else
+	        {
+	           if(Math.floor(Math.random()*2)%2===1)
+			   {
+			   	this.cloudsH[this.cloudsH.length] = Math.floor(Math.random()*height/2)-1;
+			   }
+			   else
+			   {
+			   	 this.cloudsH[this.cloudsH.length] = Math.floor(Math.random()*-height/2)+1;
+			   }
+			   if(Math.floor(Math.random()*2)%2===1)
+			   {
+			   	this.cloudsW[this.cloudsW.length] = -width/2+1;
+			   }
+			   else
+			  {
+			   this.cloudsW[this.cloudsW.length] = width/2-1;
+	          }
+	        }
+	      }
+	      for(var i =0; i<this.cloudsW.length; i++)
+	      {
+	      this.getDirection(ang, i);
+	        if(this.cloudsH[i]>height/2 || this.cloudsW[i]>width/2 || this.cloudsH[i]<-height/2 || this.cloudsW[i]<-width/2)
+	        {
+	         this.cloudsH.splice(i, 1);
+	         this.cloudsW.splice(i, 1);
+	         i--;
+	        }
+	        else
+	        {
+
+	         ctx.drawImage(cloud, this.cloudsW[i], this.cloudsH[i], 100, 100);
+	        }
+	      }
+	    }
+	    Player1.prototype.getDirection = function(ang, i)
+	    {
+		  	      if(ang>29 && ang<33 || ang <-29 && ang>-33)
+		  	      {
+		  	       this.direction = "down";
+		  	       this.cloudsH[i] -= this.speed;
+		  	      }
+		  	      else if(ang>1 && ang<6 || ang>-63 && ang<-57)
+		  	      {
+		  	        this.direction = "upperright";
+		  	        this.cloudsH[i] += 15;
+	                this.cloudsW[i] -=5;
+		  	      }
+		  	      else if(ang>5 && ang<11 || ang>-58 && ang<-52)
+		  	      {
+		  	        this.direction = "upright";
+		  	        this.cloudsW[i] -=10;
+	                this.cloudsH[i] +=10;
+		  	      }
+		  	      else if(ang>10 && ang<15 || ang>-53 && ang<-48)
+		  	      {
+		  	       this.direction = "uprighter";
+		  	       this.cloudsW[i] -= 15;
+	       this.cloudsH[i] += 5;
+		  	      }
+		  	      else if(ang >14 && ang<18 || ang > -49 && ang <-44)
+		  	      {
+		  	       this.direction = "right";
+		  	       this.cloudsW[i] -= this.speed;
+		  	      }
+		  	      else if(ang > 17 && ang<22 || ang>-45 && ang<-39)
+		  	      {
+		  	        this.direction = "downrighter";
+		  	        this.cloudsW[i] -= 15;
+	                this.cloudsH[i] -= 5;
+		  	      }
+		  	      else if(ang>21 && ang<26 || ang>-40 && ang<-35)
+		  	      {
+		  	       this.direction = "downright";
+		  	       this.cloudsW[i] -=10;
+	       		   this.cloudsH[i] -=10;
+		  	      }
+		  	      else if(ang>25 && ang<30 || ang>-36 && ang<-32)
+		  	      {
+		  	        this.direction = "downerright";
+		  	        this.cloudsW[i] -=5;
+	        		this.cloudsH[i] -=15;
+		  	      }
+		  	      else if(ang>32 && ang<38 || ang>-33 && ang<-27)
+		  	      {
+		  	       this.direction = "downerleft";
+		  	       this.cloudsW[i] +=5;
+	       		   this.cloudsH[i] -=15;
+		  	      }
+		  	      else if(ang>37 && ang<42 || ang>-28 && ang<-21)
+		  	      {
+		  	       this.direction = "downleft";
+		  	       this.cloudsW[i] +=10;
+	       		   this.cloudsH[i] -=10;
+		  	      }
+		  	      else if(ang>41 && ang<45 || ang>-22 && ang<-16)
+		  	      {
+		  	       this.direction = "downlefter";
+		  	       this.cloudsH[i] -=5;
+	       		   this.cloudsW[i] +=15;
+		  	      }
+		  	      else if(ang < -13 && ang > -17 || ang > 44 && ang <49 )
+		  	      {
+		  	       this.direction = "left";
+		  	       this.cloudsW[i] += this.speed;
+		  	      }
+		  	      else if(ang>48 && ang < 52 || ang>-14 && ang<-9)
+		  	      {
+		  	       this.direction = "uplefter";
+		  	       this.cloudsH[i] +=5;
+	       		   this.cloudsW[i] +=15;
+		  	      }
+		  	      else if(ang>51 && ang<57 || ang>-10 && ang<-5)
+		  	      {
+		  	       this.direction = "upleft";
+		  	       this.cloudsH[i] +=10;
+	       		   this.cloudsW[i] +=10;
+		  	      }
+		  	      else if(ang>56 && ang<62 || ang>-6 && ang<-1)
+		  	      {
+		  	       this.direction = "upperleft";
+		  	       this.cloudsH[i] +=15;
+	       		   this.cloudsW[i] +=5;
+	              }
+	      else
+		  	      {
+		  	        this.direction = "up";
+		  	        this.cloudsH[i] += this.speed;
+	      }
+	    }
+	    Player1.prototype.drawF = function(ang)
+	    {
+	    if(this.fume.length<5)
+	    {
+	     this.fume.push(ang)
+	    }
+	    else
+	    {
+	     this.fume.pop();
+	     this.fume.unshift(ang);
+	    }
+	    for(var i = 0; i<this.fume.length; i++)
+	    {
+	    ctx.save();
+	    ctx.rotate(this.fume[i]/10);
+	      ctx.drawImage(fumes, -9, 47 + (20*i), 20, 20);
+	      ctx.restore();
+	    }
+	    }
+	    var Missle = function()
+	    {
+	      this.direct = [];
+	      this.fireX = [];
+	      this.fireY = [];
+	      this.course = [];
+	      this.gunner = [];
+	    }
+	    Missle.prototype.add = function(dir)
+	    {
+	      this.direct[this.direct.length] = dir;
+	      this.fireX[this.fireX.length] = width/2;
+	      this.fireY[this.fireY.length] = height/2;
+	      this.course[this.course.length] = turn/10;
+	      this.gunner[this.gunner.length] = gun;
+	      if(gun)
+		  	      {
+		  	      mySound4.currentTime = 0;
+		  	       mySound4.play();
+		  	      }
+		  	      else
+		  	      {
+		  	      mySound3.currentTime=0;
+		  	        mySound3.play();
+	      }
+	      this.move(this.direct.length-1);
+	    }
+	    Missle.prototype.move = function(i)
+	    {
+	       if(this.direct[i] === "down")
+		   	{
+		   	  this.fireY[i] +=15;
+		   	  this.course[i] = 3.2;
+		   	}
+		   else if(this.direct[i] === "upperright")
+		   {
+		   	this.fireX[i] +=5;
+		   	this.fireY[i] -=10;
+		   	this.course[i] = 0.4;
+		   }
+		   else if(this.direct[i] === "upright")
+		  {
+		    this.fireX[i] +=10;
+		    this.fireY[i] -=10;
+		    this.course[i] = 0.8;
+		  }
+		  else if(this.direct[i] === "uprighter")
+		  {
+		   this.fireX[i] +=10;
+		   this.fireY[i] -=5;
+		   this.course[i] = 1.2;
+		  }
+		  else if(this.direct[i] === "right")
+		  {
+		    this.fireX[i] +=15;
+		    this.course[i] = 1.6;
+		  }
+		  else if(this.direct[i] === "downrighter")
+		  {
+		   this.fireX[i] +=10;
+		   this.fireY[i] +=5;
+		   this.course[i] = 2.0;
+		  }
+	      else if(this.direct[i] === "downright")
+		  {
+		   this.fireX[i] +=7;
+		   this.fireY[i] +=7;
+		   this.course[i] = 2.4;
+		  }
+		  else if(this.direct[i] === "downerright")
+	     {
+		   this.fireX[i] +=5;
+		    this.fireY[i] +=10;
+		    this.course[i] = 2.8;
+		  }
+		  else if(this.direct[i] === "downerleft")
+		  {
+		    this.fireY[i] +=10;
+		    this.fireX[i] -=5;
+		    this.course[i] = 3.6;
+		   }
+		  else if(this.direct[i] === "downleft")
+		  {
+		   this.fireX[i] -=7;
+		   this.fireY[i] +=7;
+		   this.course[i] = 4.0;
+		  }
+		  else if(this.direct[i] === "downlefter")
+	      {
+		   this.fireX[i] -=10;
+		   this.fireY[i] +=5;
+		   this.course[i] = 4.4;
+		  }
+		  else if(this.direct[i] === "left")
+		  {
+		    this.fireX[i] -=15;
+		    this.course[i] = 4.8;
+		  }
+		  else if(this.direct[i] === "uplefter")
+		  {
+		   this.fireX[i] -=10;
+		   this.fireY[i] -=5;
+		   this.course[i] = 5.2;
+		  }
+		  else if(this.direct[i] === "upleft")
+		  {
+		  this.fireX[i] -=7;
+		  this.fireY[i] -=7;
+		  this.course[i] = 5.6;
+		  }
+		  else if(this.direct[i] === "upperleft")
+		  {
+		   this.fireX[i] -= 5;
+		   this.fireY[i] -= 10;
+		   this.course[i] = 6.0;
+		  }
+		  else
+		  {
+		   this.fireY[i] -= 15;
+		   this.course[i] = 0.0;
+		  }
+	    }
+	    Missle.prototype.checkCollision = function(i)
+	    {
+	    if(!this.gunner[i])
+	    {
+	    if(this.fireY[i]>height || this.fireY[i]<0 || this.fireX[i]<0 || this.fireX[i]>width)
+		{
+			this.fireX.splice(i, 1);
+			this.direct.splice(i, 1);
+			this.course.splice(i, 1);
+	        this.fireY.splice(i, 1);
+	        this.gunner.splice(i, 1);
+        }
+	      else if(this.fireX[i]<=enem.locateX+67 && this.fireX[i]+8>=enem.locateX &&enem.on)
+	      {
+	        if(this.fireY[i]<=enem.locateY+67 && this.fireY[i]+24>=enem.locateY && enem.on)
+	        {
+	         enem.on = false;
+	         this.fireX.splice(i, 1);
+	         this.direct.splice(i, 1);
+	         this.course.splice(i, 1);
+	         this.fireY.splice(i, 1);
+	         this.gunner.splice(i, 1);
+	         player.money +=10;
+	         mySound2.currentTime = 0;
+	         mySound2.play();
+	        }
+	      }
+	      else if(this.fireX[i]<=boss.locateX+boss.w && this.fireX[i]+8>=boss.locateX &&boss.on)
+	      {
+	        if(this.fireY[i]<=boss.locateY+boss.h && this.fireY[i]+24>=boss.locateY && boss.on)
+	        {
+	         boss.damage(5);
+	         this.fireX.splice(i, 1);
+			 this.direct.splice(i, 1);
+			 this.course.splice(i, 1);
+			 this.fireY.splice(i, 1);
+	         this.gunner.splice(i, 1);
+	         player.money +=20;
+	         mySound2.currentTime = 0;
+	         mySound2.play();
+	        }
+	      }
+	      else if(this.fireX[i]<=boss.mX+8 && this.fireX[i]+8>=boss.mX &&boss.on)
+		  {
+		  if(this.fireY[i]<=boss.mY+24 && this.fireY[i]+24>=boss.mY && boss.on)
+		  				        {
+		  				         this.fireX.splice(i, 1);
+		  						 this.direct.splice(i, 1);
+		  				         this.course.splice(i, 1);
+		  				         this.fireY.splice(i, 1);
+		  				         this.gunner.splice(i, 1);
+		  				         boss.fire = false;
+		  	      }
+	    }
+	      }
+	      else
+	      {
+	        if(this.fireY[i]>height || this.fireY[i]<0 || this.fireX[i]<0 || this.fireX[i]>width)
+					{
+						this.fireX.splice(i, 1);
+						this.direct.splice(i, 1);
+						this.course.splice(i, 1);
+				        this.fireY.splice(i, 1);
+				        this.gunner.splice(i, 1);
+			        }
+				      else if(this.fireX[i]<=enem.locateX+67 && this.fireX[i]+4>=enem.locateX &&enem.on)
+				      {
+				        if(this.fireY[i]<=enem.locateY+67 && this.fireY[i]+12>=enem.locateY && enem.on)
+				        {
+				         enem.health -=1;
+				         if(enem.health===0)
+				         {
+				           enem.on = false;
+				           player.money +=20;
+				         }
+				         this.fireX.splice(i, 1);
+				         this.direct.splice(i, 1);
+				         this.course.splice(i, 1);
+				         this.fireY.splice(i, 1);
+				         this.gunner.splice(i, 1);
+				         mySound2.currentTime = 0;
+				         mySound2.play();
+				        }
+	      }
+	        else if(this.fireX[i]<=boss.locateX+boss.w && this.fireX[i]+8>=boss.locateX &&boss.on)
+				      {
+				        if(this.fireY[i]<=boss.locateY+boss.h && this.fireY[i]+24>=boss.locateY && boss.on)
+				        {
+				         boss.damage(2);
+				         this.fireX.splice(i, 1);
+						 this.direct.splice(i, 1);
+				         this.course.splice(i, 1);
+				         this.fireY.splice(i, 1);
+				         this.gunner.splice(i, 1);
+				         mySound2.currentTime = 0;
+				         mySound2.play();
+				        }
+	      }
+	      else if(this.fireX[i]<=boss.mX+8 && this.fireX[i]+8>=boss.mX &&boss.on)
+				      {
+				        if(this.fireY[i]<=boss.mY+24 && this.fireY[i]+24>=boss.mY && boss.on)
+				        {
+				         this.fireX.splice(i, 1);
+						 this.direct.splice(i, 1);
+				         this.course.splice(i, 1);
+				         this.fireY.splice(i, 1);
+				         this.gunner.splice(i, 1);
+				         boss.fire = false;
+	      }
+	    }
+	    }
+	    }
+	    Missle.prototype.runner = function()
+	    {
+	      for(var i = 0; i<this.direct.length; i++)
+	      {
+	       ctx.save();
+	       this.move(i);
+	       ctx.translate(-width/2, -height/2);
+	       ctx.translate(this.fireX[i], this.fireY[i]);
+	       ctx.rotate(this.course[i]);
+	       if(!this.gunner[i])
+	       {
+	       ctx.drawImage(mis, 0, 0, 8, 24);
+	       }
+	       else
+	       {
+	        ctx.drawImage(bul, 0, 0, 4, 12);
+	       }
+	       ctx.restore();
+	       this.checkCollision(i);
+	      }
+	    }
+	    var player = new Player1();
+	    var missle = new Missle();
+	    var Enemy = function()
+	    {
+	     this.on = false;
+	     this.health = 100;
+	     this.damage  = 10;
+	     this.turning = false;
+	     this.frames = 20;
+	     this.newDirection = 0;
+	     this.locateY = 0;
+	     this.locateX = 0;
+	     this.worth = 10;
+	     this.act = false;
+	     this.health = 2;
+	     this.direction = 0;
+	    }
+	    Enemy.prototype.getLocation = function()
+	    {
+	    if(this.direction===0)
+	    {
+	      this.locateX=width/2;
+	      this.locateY=height
+	    }
+		  		else if(this.direction===1)
+		  		{
+		  		this.locateY = height;
+		  		this.locateX = 240;
+		  		this.direction = 8;
+		  		}
+		  		else if(this.direction===2)
+		  		{
+		  		this.locateY = height/2;
+		  		this.locateX = 0;
+		  		this.direction = 16;
+		  		}
+		  		else if(this.direction===3)
+		  		{
+		  		this.locateY = 0;
+		  		this.locateX = 240;
+		  		this.direction = 24;
+		  		}
+		  		else if(this.direction===4)
+		  		{
+		  		this.locateY = 0;
+		  		this.locateX = width/2;
+		  		this.direction = 32;
+		  		}
+		  		else if(this.direction===5)
+		  		{
+		  		this.locateY  = 0;
+		  		this.locateX  = 815;
+		  		this.direction = 40;
+		  		}
+		  		else if(this.direction===6)
+		  		{
+		  		this.locateY = height/2;
+		  		this.locateX = width;
+		  		this.direction = 48;
+		  		}
+		  		else if(this.direction===7)
+		  		{
+		  		this.locateY =height;
+		  		this.locateX = 815;
+		  		this.direction = 56;
+		  		}
+		  		this.newDirection = this.direction;
+	    }
+	    Enemy.prototype.add = function()
+	    {
+	    if(Math.floor(Math.random()*100)<10 && !this.on)
+	    {
+	      this.amount--;
+	      this.health = 2;
+	      this.direction = Math.floor(Math.random()*8);
+	      this.getLocation();
+	       this.on = true;
+	    }
+	    }
+	    Enemy.prototype.change = function()
+	    {
+	    if(this.locateY+30>=height/2 && this.locateY-30<=height/2)
+		{
+		if(this.locateX>width/2)
+		{
+		this.newDirection = 48;
+		}
+		else
+		{
+		this.newDirection = 16;
+		}
+	      }
+	      else if(this.locateY>height/2)
+	      {
+	      if(this.locateX+30>=width/2 && this.locateX-30<=width/2)
+		  {
+		  	        this.newDirection = 0;
+	       }
+	       else if(this.locateX>width/2)
+	       {
+	        this.newDirection = 56;
+	       }
+	       else if(this.locateX<width/2)
+	       {
+	        this.newDirection = 8;
+	       }
+	      }
+	      else
+	      {
+	      if(this.locateX+30>=width/2 && this.locateX-30<=width/2)
+		  {
+		  		   	this.newDirection = 32;
+		   }
+	       else if(this.locateX<width/2)
+		   {
+		   	this.newDirection = 24;
+		   }
+		   else if(this.locateX>width/2)
+		   {
+		   	this.newDirection = 40;
+	       }
+	      }
+	      if(this.newDirection!==this.direction && this.frames >=20)
+	      {
+	       this.turning = true;
+	      }
+	    }
+	    Enemy.prototype.turner = function()
+	    {
+	     if(this.direction===56 && this.newDirection===0 || this.direction===0 && this.newDirection===56)
+	     {
+	      if(this.newDirection ===0)
+	      {
+	        this.direction +=1;
+	        if(this.direction === 64)
+	        {
+	         this.direction = 0;
+	        }
+	      }
+	      else
+	      {
+	       if(this.direction>0)
+	       {
+	       this.direction -=1;
+	       }
+	       else
+	       {
+	        this.direction = 63;
+	       }
+	      }
+	     }
+	     else if(this.direction>this.newDirection)
+	     {
+	      this.direction -=1;
+	     }
+	     else
+	     {
+	       this.direction +=1;
+	     }
+	     if(this.direction===this.newDirection)
+	     {
+	     this.frames = 0;
+	      this.turning = false;
+	     }
+	    }
+	    var account = function(obj)
+	    {
+	      if(player.direction === "down")
+		  {
+		  obj.locateY -=3;
+		  }
+		  else if(player.direction === "upperright")
+		  {
+		  obj.locateX -=1;
+		  obj.locateY +=2;
+		  }
+		  else if(player.direction === "upright")
+		  {
+		  obj.locateX-=2;
+		  obj.locateY-=2;
+		  }
+		  else if(player.direction === "uprighter")
+		  {
+		  obj.locateX -=2;
+		  obj.locateY +=1;
+		  }
+		  else if(player.direction === "right")
+		  {
+		  obj.locateX -=3;
+		  }
+		  else if(player.direction === "downrighter")
+		  {
+		  obj.locateX -=2;
+		  obj.locateY -=1;
+		  }
+		  else if(player.direction === "downright")
+		  {
+		  obj.locateX -=2;
+		  obj.locateY -=2;
+		  }
+		  else if(player.direction === "downerright")
+		  {
+		  obj.locateX -=1;
+		  obj.locateY -=2;
+		  }
+		  else if(player.direction === "downerleft")
+		  {
+		  obj.locateY -=2;
+		  obj.locateX +=1;
+		  }
+		  else if(player.direction === "downleft")
+		  {
+		  obj.locateX +=2;
+		  obj.locateY -=2;
+		  }
+		  else if(player.direction === "downlefter")
+		  {
+		  obj.locateX +=2;
+		  obj.locateY -=1;
+		  }
+		  else if(player.direction === "left")
+		  {
+		  obj.locateX +=3;
+		  }
+		  else if(player.direction === "uplefter")
+		  {
+		  obj.locateX +=2;
+		  obj.locateY +=1;
+		  }
+		  else if(player.direction === "upleft")
+		  {
+		  obj.locateX +=2;
+		  obj.locateY +=2;
+		  }
+		  else if(player.direction === "upperleft")
+		  {
+		  obj.locateX +=1;
+		  obj.locateY +=2;
+		  }
+		  else
+		  {
+		  obj.locateY += 3;
+		  }
+	    }
+	    Enemy.prototype.mover = function()
+	    {
+	    ctx.translate(-width/2, -height/2);
+	    this.change();
+	    if(!this.turning)
+	    {
+	    if(this.direction===0)
+		{
+		this.locateY -=15;
+		}
+  		else if(this.direction===8)
+  		{
+  		this.locateY -= 10;
+  		this.locateX +=8;
+  		}
+  		else if(this.direction===16)
+  		{
+  		this.locateX += 15;
+  		}
+  		else if(this.direction===24)
+  		{
+	    this.locateY +=10;
+  		this.locateX +=10;
+  		}
+  		else if(this.direction===32)
+  		{
+  		this.locateY += 15;
+  		}
+  		else if(this.direction===40)
+  		{
+  		this.locateY  += 10;
+  		this.locateX  -= 4;
+  		}
+  		else if(this.direction===48)
+  		{
+  		this.locateX -= 15;
+  		}
+  		else if(this.direction===56)
+  		{
+  		this.locateY -= 10;
+  		this.locateX -= 4;
+  		}
+  		}
+  		else
+  		{
+  		 this.turner();
+  		 account(this);
+  		}
+  		account(this);
+  		this.frames++;
+  		this.checker();
+
+  		ctx.translate(this.locateX, this.locateY);
+	    ctx.rotate(this.direction/10);
+	    }
+	    Enemy.prototype.draw = function()
+	    {
+	    if(!boss.on)
+	    {
+	    if(this.on)
+	    {
+	    ctx.save();
+	    this.mover();
+	    ctx.drawImage(enemy, 0, 0);
+	    ctx.restore();
+	    }
+	    else
+	    {
+	    this.add();
+	    }
+	    }
+	    else
+	    {
+	     this.on = false;
+	    }
+	    }
+	    Enemy.prototype.checker = function()
+	    {
+	     if(this.locateY>height || this.locateY<0 || this.locateX<0 || this.locateX>width)
+		 		{
+		 					this.on = false;
+		         }
+		else if(this.locateY-height/2>=-43 && this.locateY-height/2<=43 && this.locateX-width/2>=-46 && this.locateX-width/2<=46 || this.locateY-height/2-43>=-43 && this.locateY-height/2-43<=43 && this.locateX-width/2>=-46 && this.locateX-width/2<=46)
+		{
+		          mySound1.currentTime = 0;
+		          mySound1.play();
+		          this.on = false;
+		          player.health -= this.damage;
+        }
+	    }
+	    var Boss = function()
+	    {
+	     this.locateX = width/2;
+	     this.locateY = height;
+	     this.mX = 0;
+	     this.mY = 0;
+	     this.w = 180;
+	     this.h = 126;
+	     this.direct = 0;
+	     this.newDirect = 0;
+	     this.circler = false;
+	     this.adder=1000;
+	     this.health = 25;
+	     this.maxHealth = 25;
+	     this.on = false;
+	     this.new = true;
+	     this.fire = false;
+	     this.after = false;
+	     this.speed = 10;
+	    }
+	    Boss.prototype.move = function()
+	    {
+	     if(this.circler)
+	     {
+	      if(this.direct===0)
+	      {
+	       this.locateY -=this.speed;
+	      }
+	      else if(this.direct===16)
+	      {
+	       this.locateX+=this.speed;
+	      }
+	      else if(this.direct===32)
+	      {
+	       this.locateY+=this.speed;
+	      }
+	      else
+	      {
+	       this.locateX-=this.speed;
+	      }
+	     }
+	     else
+	     {
+	      this.locateY -=this.speed;
+	      if(this.locateY===700)
+	      {
+	       this.circler = true;
+	       this.newDirect = 16;
+	      }
+	     }
+	    }
+	    Boss.prototype.changer = function()
+	    {
+	    if(this.locateY>=180 && this.locateY<=200 && this.direct ===0)
+	    {
+	     this.newDirect = 48;
+	    }
+	    if(this.locateX>=180 && this.locateX<=200 && this.direct === 48)
+	    {
+	     this.newDirect = 32;
+	    }
+	    if(this.locateY>=680 && this.locateY<=700 && this.direct === 32)
+	    {
+	     this.newDirect  = 16;
+	    }
+	    if(this.locateX>=1060 && this.locateX<=1080 && this.direct === 16)
+	    {
+	     this.newDirect = 0;
+	     this.after = true;
+	    }
+	    }
+	    Boss.prototype.turner = function()
+	    {
+	     if(this.new)
+	     {
+	     this.direct +=1;
+	     if(this.direct === 16)
+	     {
+	     this.new = false;
+	     }
+	     }
+	     else
+	     {
+	      this.direct -=1;
+	      if(this.direct===-1)
+	      {
+	        this.direct = 63;
+	      }
+	     }
+	    }
+	    Boss.prototype.shoot = function()
+	    {
+	     if(this.locateX===width/2 && this.after ||this.locateY===height/2+5 && this.after)
+	     {
+	      this.fire = true;
+	       mySound5.currentTime = 0;
+		 mySound5.play();
+		 this.mX = this.locateX;
+		 this.mY = this.locateY;
+	     }
+	     if(this.fire)
+	     {
+	       if(this.mX===width/2)
+	       {
+	        if(this.mY>height/2)
+	        {
+	         this.mY -=7;
+	         this.course = 0;
+	        }
+	        else
+	        {
+	         this.mY +=7;
+	         this.course = 32;
+	        }
+	       }
+	       else
+	       {
+	        if(this.mX>width/2)
+	        {
+	          this.mX -=7;
+	          this.course = 48;
+	        }
+	        else
+	        {
+	         this.mX +=7;
+	         this.course = 16;
+	        }
+	       }
+	       ctx.save();
+	       ctx.translate(-width/2, -height/2);
+	       ctx.translate(this.mX, this.mY);
+	       ctx.rotate(this.course/10);
+	       ctx.drawImage(mis, 0, 0, 8, 24);
+	       ctx.restore();
+	     }
+	     if(this.mX-width/2>-43 && this.mX-width/2<43 && this.mY-height/2>-46 && this.mY-height/2<46 && this.fire)
+	     {
+	      player.health -=15;
+	      this.fire = false;
+	      mySound7.currentTime = 0;
+	      mySound7.play();
+	     }
+	    }
+	    Boss.prototype.dHealth = function()
+		{
+		         ctx.fillText("Bosses health: ", -width/2+10, height/2-100);
+			     ctx.strokeRect(-width/2+10, height/2-80, this.maxHealth*10, 50);
+			     ctx.fillStyle = "red";
+			     ctx.fillRect(-width/2+10, height/2-80, this.health*10, 50);
+	    }
+	    Boss.prototype.damage = function(hit)
+	    {
+	     this.health -=hit;
+	     if(this.health<=0)
+	     {
+	      this.on = false;
+	      this.adder = score + 1000;
+	      this.new = true;
+	      this.direct = 0;
+	      this.newDirect = 0;
+	      this.locateY = height;
+	      this.locateX = width/2;
+	      this.maxHealth +=10;
+	      this.health = this.maxHealth;
+	      this.circler = false;
+	      this.after = false;
+	      this.speed +=5;
+	      mySound6.currentTime = 0;
+		  mySound6.play();
+	     }
+	    }
+	    Boss.prototype.draw = function()
+	    {
+	    if(this.on)
+	    {
+       if(this.direct!==this.newDirect)
+        {
+        this.turner();
+        }
+        else
+        {
+		this.move();
+		this.changer();
+	    }
+	    this.shoot();
+	    this.dHealth();
+	    ctx.save();
+	    ctx.translate(-width/2, -height/2)
+	    ctx.translate(this.locateX, this.locateY);
+	    ctx.rotate(this.direct/10);
+	    ctx.drawImage(bos, 0, 0, this.w, this.h);
+	    ctx.restore();
+	    }
+	    else
+	    {
+	     if(score-this.adder===0)
+	     {
+	     this.on = true;
+	     }
+	    }
+	    }
+	    Player.onload = function ()
+	    {Start();}
+	    fumes.onload = function(){}
+	    enemy.onload = function(){}
+		var enem = new Enemy();
+		var boss = new Boss();
+        var actions = function(direction)
+        {
+        if("left" === direction)
+        {
+           turn -=1;
+           if(turn===-63)
+           {
+            turn = 0;
+           }
+        }
+        else if("right"=== direction)
+        {
+			turn +=1;
+			if(turn===63)
+			{
+			 turn = 0;
+			}
+        }
+        if("fire" === direction && player.energy !== 0 && wait>=limit)
+        {
+          player.act = true;
+          wait = 0;
+        }
+        if("switch" === direction)
+        {
+         gun = !gun;
+         if(gun)
+         {
+           limit = 0;
+         }
+         else
+         {
+          limit = 3;
+         }
+        }
+        if("reload" === direction)
+        {
+         player.rel = true;
+        }
+        }
+        var Upgrade = function()
+        {
+        sleep(300);
+          ctx.fillStyle = "yellow";
+          ctx.clearRect(-width/2, -height/2, width, height);
+          ctx.fillRect(-150, -height/3, 400, 250);
+          ctx.fillStyle = "black";
+          ctx.fillText("Upgrade time!!", -15, -height/3+20);
+          ctx.fillText("Health: " + player.health, -150+10, -height/3+100);
+          ctx.fillText("Max Health: " +player.maxHealth,  -150+10, -height/3+130);
+          ctx.fillText("Max Ammo: "+ player.maxAmmo, -150+10, -height/3+160);
+          ctx.fillText("Reload Speed: "+ relSpeed, -150+10, -height/3+190);
+          ctx.fillRect(125, -height/3+80, 120, 25);
+          ctx.fillRect(125, -height/3+110, 120, 25);
+          ctx.fillRect(125, -height/3+140, 120, 25);
+          ctx.fillRect(125, -height/3+170, 120, 25);
+          ctx.fillRect(-25, -height/3+227, 100, 23);
+          ctx.font = "20px Arial";
+          ctx.fillStyle = "white";
+          if(player.maxAmmo!==200)
+          {
+          ctx.fillText("+50", 130, -height/3+160);
+          }
+          else
+          {
+           ctx.fillText("Maxed", 130, -height/3+160);
+          }
+          if(player.maxHealth!==200)
+          {
+          ctx.fillText("Health +50", 130, -height/3+130);
+          }
+          else
+          {
+            ctx.fillText("Maxed", 130, -height/3+130);
+          }
+          if(player.health>=player.maxHealth)
+          {
+            player.health = player.maxHealth;
+            ctx.fillText("At full Health", 130, -height/3+100);
+          }
+          else
+          {
+            ctx.fillText("Heal +20", 130, -height/3+100);
+          }
+          if(relSpeed!==4)
+          {
+           ctx.fillText("Speed*2", 130, -height/3+190);
+          }
+          else
+          {
+          ctx.fillText("Maxed", 130, -height/3+190);
+          }
+          ctx.fillText("Done", -1, -height/3+247);
+        }
+        var speedUp = function()
+        {
+         score++;
+         wait ++;
+        }
+        var loop = setInterval(function()
+        {
+          if(!screen && !upgrade)
+          {
+        	player.draw(turn);
+        	enem.draw();
+        	boss.draw();
+        	missle.runner();
+        	speedUp();
+        	}
+        	else if(upgrade && !screen)
+        	{
+        	 Upgrade();
+        	 player.drawM();
+        	}
+        	if(player.health <= 0)
+        	{
+        	 gameOver();
+        	}
+        }, 50);
+
+    var map = {};
+	onkeydown = onkeyup = function(e){
+	    e = e || event; // to deal with IE
+	    map[e.keyCode] = e.type == 'keydown';
+	    if(map[32])
+	    {
+	      setTimeout(actions("fire"), 100);
+	    }
+	    if(map[37])
+	    {
+	      setTimeout(actions("left"), 0);
+	    }
+	    if(map[39])
+	    {
+	      setTimeout(actions("right"), 0);
+	    }
+	    if(map[67] && !screen)
+	    {
+	    upgrade = true;
+	    }
+	    if(map[88])
+	    {
+	      setTimeout(actions("switch"), 0);
+	    }
+	    if(map[90])
+	    {
+	     setTimeout(actions("reload"), 0);
+	    }
+}
+    $("body").click(function(event)
+    {
+       if(event.offsetX>=210 && event.offsetX<=620 && event.offsetY>height-350 && event.offsetY<height-250 && screen && !instructions)
+       {
+              screen = false;
+	          document.body.style.backgroundImage = "url('LandBackground.jpg')";
+       }
+       else if(event.offsetX>width-520 && event.offsetX<width-310 && event.offsetY>height-350 && event.offsetY<height-250 && screen && !instructions)
+       {
+		 instructions = true;
+		 document.body.style.backgroundImage = "url('INSTRUCTIONBACK.png')";
+		 instruct();
+       }
+       else if(instructions && event.offsetX>0 && event.offsetX<151 && event.offsetY>0 && event.offsetY<76)
+       {
+        ctx.clearRect(-width/2, -height/2, width, height);
+        instructions = false;
+        document.body.style.backgroundImage = "url('StartBackground2.png')";
+        Start();
+       }
+       if(upgrade && !screen)
+       {
+       var X = event.offsetX-width/2;
+       var Y = event.offsetY-height/2;
+       if(X>=125 && X<=245)
+       {
+       if(Y>=-210 && Y<=-185 && player.money>=20 && player.health<player.maxHealth)
+       {
+        player.health +=20;
+         player.money-=20;
+       }
+       else if(Y>=-180 && Y<=-155 && player.money>=100 && player.maxHealth!==200)
+       {
+        player.health +=50;
+        player.maxHealth+=50;
+         player.money-=100;
+       }
+       else if(Y>=-150 && Y<=-125 && player.money>=100 && player.maxAmmo!==200)
+       {
+       player.maxAmmo +=50;
+       player.energy +=50;
+        player.money -=100;
+       }
+       else if(Y>=-120 && Y<=-95 && player.money>=50 && relSpeed!==4)
+	   {
+	          relSpeed *=2;
+	           player.money -=50;
+       }
+       }
+       else if(X>=-25 && X<=75 && Y>=-63 && Y<=-40)
+       {
+        upgrade = false;
+       }
+       }
+       console.log("X: "+event.offsetX +" Y:" + event.offsetY);
+    });
+    </script>
+    </body>
+    </html>
