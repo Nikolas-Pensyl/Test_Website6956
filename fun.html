@@ -19,10 +19,12 @@
 </head>
 
 <body>
+<div class="jumbotron">
+  	<h1 class="display-4">Hello Lovers Of Star Wars!</h1><br>
 
-	    <!-- <div id = "main"> -->
-	      <div id= "canvas"></div>
-	  <!-- </div> -->
+      <h2 class="lead">Listen to me my young padawan.</h2>
+  	<p>The force is a powerful thing you can do anything and everything with it.</p>
+        </div>
 
 <div class="text-center">
         <a class="btn btn-primary" href="https://getbootstrap.com/docs/4.4/getting-started/introduction/" target="_blank" role="button">Bootstrap</a>
@@ -42,8 +44,24 @@
 			  </div>
 </div>
       </div>
+      <div id="container">
+
+	  	    <!-- <div id = "main"> -->
+	  	      <div id= "canvas"></div>
+	  	  <!-- </div> -->
+
+</div>
 
 <script>
+  //center the canvas
+  var tempString = ""+((window.innerWidth*0.9- 1280)/2)+ "px";
+  document.getElementById("canvas").style.marginLeft = tempString;
+
+
+  window.onresize = function(event) {
+    var tempString = ""+((window.innerWidth*0.9- 1280)/2)+ "px";
+    document.getElementById("canvas").style.marginLeft = tempString;
+  };
 
 </script>
 </body>

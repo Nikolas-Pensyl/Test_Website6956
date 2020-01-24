@@ -8,9 +8,6 @@ var dots = [];
 var imageNo = 0;
 var reachCount = 30;
 
-var canvasWidth = window.innerWidth;
-var canvasHieght = 200;
-
 
 var checkMousePos = true;
 var pause = false;
@@ -58,16 +55,16 @@ function preload() {
 }
 
 function setup() {
-  window.canvas = createCanvas(window.innerWidth, 200);
+  window.canvas = createCanvas(1280, 720);
   canvas.parent('canvas');
 
   frameRate(20);
   print("nice");
   pixelDensity(1);
-  // targetImage = createImage(canvasWidth, canvas.height);
+  // targetImage = createImage(canvas.width, canvas.height);
   var count = 0;
   targetImages[imageNo].loadPixels();
-  var scale = canvasWidth / targetImages[imageNo].width;
+  var scale = canvas.width / targetImages[imageNo].width;
   for (var y = 0; y < targetImages[imageNo].height; y += 5) {
     for (var x = 0; x < targetImages[imageNo].width; x += 5) {
       var index = (x + y * targetImages[imageNo].width) * 4;
@@ -101,7 +98,7 @@ function setup() {
 function draw() {
 
   if (!pause) {
-    background(255, 255, 255);
+    background(0, 0, 0);
     checkMousePos = frameCount % 1 == 0;
     for (var d of dots) {
       d.move();
@@ -142,9 +139,9 @@ function draw() {
     mouseSpeed = mouseVel.mag();
     previousPosition = createVector(mouseX, mouseY);
 
-    fill(0, 0, 0, 100);
+    fill(255, 255, 255, 100);
     if (mouseSpeed < 40) {
-      mouseSpeed = 40;
+      mouseSpeed = 40
     }
     for (var m of mouseArray) {
       ellipse(m.x, m.y, 50);
@@ -162,7 +159,7 @@ function nextImage() {
   vecs = [];
 
   targetImages[imageNo].loadPixels();
-  var scale = canvasWidth / targetImages[imageNo].width;
+  var scale = canvas.width / targetImages[imageNo].width;
   for (var y = 0; y < targetImages[imageNo].height; y += 4) {
     for (var x = 0; x < targetImages[imageNo].width; x += 4) {
       var index = (x + y * targetImages[imageNo].width) * 4;
