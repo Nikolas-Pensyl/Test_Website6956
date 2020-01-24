@@ -30,7 +30,7 @@ function preload() {
 
   var tempArray = [];
 
-  targetImages.push(loadImage("img/targetImage3.png"));
+  targetImages.push(loadImage("./img/targetImage3.png"));
 
 
 
