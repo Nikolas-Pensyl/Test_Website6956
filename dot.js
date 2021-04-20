@@ -24,8 +24,8 @@ class Dot {
       if(dist(this.pos.x, this.pos.y, this.target.x, this.target.y) < 10) {
         this.reached = true;
         this.pos = this.target.copy();
-        this.pos.x += random(2);
-        this.pos.y += random(2);
+        //this.pos.x += random(2);
+       // this.pos.y += random(2);
       }
     }
 
